@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventAura | Admin Dashboard</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #111318;
+            color: white;
+            padding: 30px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+        }
+
+        header h1 {
+            color: #ffc107;
+        }
+
+        header a {
+            color: white;
+            text-decoration: none;
+            background: #20242d;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+
+        header a:hover {
+            background: #ffc107;
+            color: #111;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #20242d;
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        .stat-card h2 {
+            color: #ffc107;
+            font-size: 32px;
+            margin-top: 12px;
+        }
+
+        .section-box {
+            background: #20242d;
+            padding: 25px;
+            border-radius: 12px;
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            color: #ffc107;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 750px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #414650;
+        }
+
+        th {
+            color: #ffc107;
+        }
+
+        button {
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            transition: 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+
+        .empty-row {
+            text-align: center;
+            color: #888;
+            padding: 20px;
+        }
+
+        @media(max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>EventAura Admin Dashboard</h1>
+        <a href="/">← Back to Website</a>
+    </header>
+
+    <div class="stats">
+        <div class="stat-card">
+            <p>Total Bookings (MongoDB)</p>
+            <h2 id="totalBookings">0</h2>
+        </div>
+
+        <div class="stat-card">
+            <p>Total Guests</p>
+            <h2 id="totalGuests">0</h2>
+        </div>
+
+        <div class="stat-card">
+            <p>Contact Inquiries (MongoDB)</p>
+            <h2 id="totalMessages">0</h2>
+        </div>
+    </div>
+
+    <!-- BOOKINGS TABLE -->
+    <div class="section-box">
+        <h3>All Event Bookings</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Event</th>
+                    <th>Date</th>
+                    <th>Guests</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="bookingTable">
+                <tr><td colspan="7" class="empty-row">Loading bookings...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- MESSAGES TABLE -->
+    <div class="section-box">
+        <h3>Contact Form Inquiries</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Subject</th>
+                    <th>Message</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="messageTable">
+                <tr><td colspan="6" class="empty-row">Loading messages...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function loadBookings() {
+            try {
+                const response = await fetch("/api/bookings");
+                const bookings = await response.json();
+
+                document.getElementById("totalBookings").textContent = bookings.length;
+                document.getElementById("totalGuests").textContent =
+                    bookings.reduce((sum, b) => sum + Number(b.guests || 0), 0);
+
+                const table = document.getElementById("bookingTable");
+                table.innerHTML = "";
+
+                if (bookings.length === 0) {
+                    table.innerHTML = '<tr><td colspan="7" class="empty-row">No bookings found in MongoDB.</td></tr>';
+                    return;
+                }
+
+                bookings.forEach((booking) => {
+                    const row = document.createElement("tr");
+
+                    [
+                        booking.name,
+                        booking.phone,
+                        booking.email,
+                        booking.eventType,
+                        booking.eventDate,
+                        booking.guests
+                    ].forEach(value => {
+                        const cell = document.createElement("td");
+                        cell.textContent = value || "";
+                        row.appendChild(cell);
+                    });
+
+                    const actionCell = document.createElement("td");
+                    const deleteButton = document.createElement("button");
+                    deleteButton.textContent = "Delete";
+                    deleteButton.className = "delete-btn";
+                    deleteButton.onclick = () => deleteBooking(booking._id);
+
+                    actionCell.appendChild(deleteButton);
+                    row.appendChild(actionCell);
+                    table.appendChild(row);
+                });
+            } catch (err) {
+                console.error("Error loading bookings:", err);
+            }
+        }
+
+        async function deleteBooking(id) {
+            if (!confirm("Delete this booking from MongoDB?")) return;
+
+            const response = await fetch("/api/bookings/" + id, {
+                method: "DELETE"
+            });
+
+            if (response.ok) {
+                loadBookings();
+            } else {
+                alert("Could not delete booking.");
+            }
+        }
+
+        async function loadMessages() {
+            try {
+                const response = await fetch("/api/messages");
+                const messages = await response.json();
+
+                document.getElementById("totalMessages").textContent = messages.length;
+
+                const table = document.getElementById("messageTable");
+                table.innerHTML = "";
+
+                if (messages.length === 0) {
+                    table.innerHTML = '<tr><td colspan="6" class="empty-row">No contact messages found in MongoDB.</td></tr>';
+                    return;
+                }
+
+                messages.forEach((msg) => {
+                    const row = document.createElement("tr");
+
+                    const dateStr = msg.date ? new Date(msg.date).toLocaleString() : "";
+
+                    [
+                        msg.name,
+                        msg.email,
+                        msg.subject,
+                        msg.message,
+                        dateStr
+                    ].forEach(value => {
+                        const cell = document.createElement("td");
+                        cell.textContent = value || "";
+                        row.appendChild(cell);
+                    });
+
+                    const actionCell = document.createElement("td");
+                    const deleteButton = document.createElement("button");
+                    deleteButton.textContent = "Delete";
+                    deleteButton.className = "delete-btn";
+                    deleteButton.onclick = () => deleteMessage(msg._id);
+
+                    actionCell.appendChild(deleteButton);
+                    row.appendChild(actionCell);
+                    table.appendChild(row);
+                });
+            } catch (err) {
+                console.error("Error loading messages:", err);
+            }
+        }
+
+        async function deleteMessage(id) {
+            if (!confirm("Delete this message from MongoDB?")) return;
+
+            const response = await fetch("/api/messages/" + id, {
+                method: "DELETE"
+            });
+
+            if (response.ok) {
+                loadMessages();
+            } else {
+                alert("Could not delete message.");
+            }
+        }
+
+        // Initialize dashboard
+        loadBookings();
+        loadMessages();
+    </script>
+
+</body>
+</html>
