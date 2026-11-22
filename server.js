@@ -1,3 +1,5 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const mongoose = require("mongoose");
@@ -7,10 +9,10 @@ const Booking = require("./models/Booking");
 const Message = require("./models/Message");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// MongoDB Connection (SRV)
-const MONGO_URI = "mongodb+srv://piyushbansal5916_db_user:qmAAUE95R5L2tSZQ@cluster0.fdjsyei.mongodb.net/eventaura?retryWrites=true&w=majority";
+// MongoDB Connection (loaded from .env)
+const MONGO_URI = process.env.MONGO_URI;
 
 mongoose.connect(MONGO_URI, {
     family: 4,
