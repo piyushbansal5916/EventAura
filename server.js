@@ -1,4 +1,3 @@
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 require("dotenv").config();
 const express = require("express");
 const path = require("path");
@@ -15,8 +14,7 @@ const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI;
 
 mongoose.connect(MONGO_URI, {
-    family: 4,
-    tlsAllowInvalidCertificates: true
+    family: 4
 })
     .then(() => console.log("✅ Connected to MongoDB Atlas successfully!"))
     .catch((err) => console.error("❌ MongoDB connection error:", err.message));
